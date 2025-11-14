@@ -23,13 +23,22 @@ function decode(base64: string): Uint8Array {
   return bytes;
 }
 
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext): Promise<AudioBuffer> {
+// fix: Updated audio decoding function to match guideline implementation for robustness.
+async function decodeAudioData(
+  data: Uint8Array,
+  ctx: AudioContext,
+  sampleRate: number,
+  numChannels: number,
+): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length;
-  const buffer = ctx.createBuffer(1, frameCount, 24000);
-  const channelData = buffer.getChannelData(0);
-  for (let i = 0; i < frameCount; i++) {
-    channelData[i] = dataInt16[i] / 32768.0;
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
   }
   return buffer;
 }
@@ -84,7 +93,7 @@ const LiveChat: React.FC = () => {
             config: {
                 responseModalities: [Modality.AUDIO],
                 speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
-                systemInstruction: 'You are EduBot, a friendly and helpful AI assistant for students. Keep your answers concise and conversational.',
+                systemInstruction: 'You are ChatGPS, a friendly and helpful AI assistant for students. Keep your answers concise and conversational.',
                 inputAudioTranscription: {},
                 outputAudioTranscription: {}
             },
@@ -132,7 +141,8 @@ const LiveChat: React.FC = () => {
                     const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
                     if (base64Audio) {
                         nextStartTime = Math.max(nextStartTime, outputAudioContext.currentTime);
-                        const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContext);
+                        // fix: Pass sample rate and channel count to the updated decodeAudioData function.
+                        const audioBuffer = await decodeAudioData(decode(base64Audio), outputAudioContext, 24000, 1);
                         const source = outputAudioContext.createBufferSource();
                         source.buffer = audioBuffer;
                         source.connect(outputNode);
@@ -164,10 +174,6 @@ const LiveChat: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-800">
-        <header className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold">Live Conversation</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Speak directly with the AI assistant in real-time.</p>
-        </header>
         <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
             <button
                 onClick={isActive ? stopConversation : startConversation}
@@ -188,13 +194,13 @@ const LiveChat: React.FC = () => {
                 {transcription.map((turn, index) => (
                     <div key={index} className="mb-2">
                         <p><strong className="text-indigo-500">You:</strong> {turn.user}</p>
-                        <p><strong className="text-green-500">EduBot:</strong> {turn.model}</p>
+                        <p><strong className="text-green-500">ChatGPS:</strong> {turn.model}</p>
                     </div>
                 ))}
                 { (currentInterim.user || currentInterim.model) &&
                     <div>
                          <p className="text-gray-500"><strong className="text-indigo-500">You:</strong> {currentInterim.user}</p>
-                         <p className="text-gray-500"><strong className="text-green-500">EduBot:</strong> {currentInterim.model}</p>
+                         <p className="text-gray-500"><strong className="text-green-500">ChatGPS:</strong> {currentInterim.model}</p>
                     </div>
                 }
             </div>

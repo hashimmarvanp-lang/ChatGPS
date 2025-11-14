@@ -7,7 +7,8 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const flashLiteModel = 'gemini-2.5-flash-lite';
+// fix: Use the 'latest' tag for gemini-flash-lite model as per guidelines.
+const flashLiteModel = 'gemini-flash-lite-latest';
 const flashModel = 'gemini-2.5-flash';
 const proModel = 'gemini-2.5-pro';
 
@@ -21,7 +22,7 @@ export const generateText = async (
         model,
         history,
         config: {
-            systemInstruction: "You are EduBot, an AI assistant for students. Help with school service questions, homework like solving equations, and other academic inquiries. Be friendly, helpful, and accurate.",
+            systemInstruction: "You are ChatGPS, an AI assistant for students. Help with school service questions, homework like solving equations, and other academic inquiries. Be friendly, helpful, and accurate.",
         }
     });
     const response = await chat.sendMessage({ message: prompt });

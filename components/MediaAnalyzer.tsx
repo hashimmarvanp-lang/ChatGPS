@@ -110,10 +110,6 @@ const MediaAnalyzer: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-800">
-            <header className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold">Media Analyzer</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Upload an image or video and ask Gemini a question about it.</p>
-            </header>
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Input Section */}

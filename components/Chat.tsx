@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '../types';
 import { generateText } from '../services/geminiService';
-import { SendIcon, LoaderIcon, SparklesIcon, MicIcon } from './Icons';
+import { SendIcon, LoaderIcon, SparklesIcon, MicIcon, TrashIcon } from './Icons';
 import { Content, GoogleGenAI, LiveServerMessage, Blob, LiveSession } from '@google/genai';
 
 // Helper function for audio encoding
@@ -14,9 +15,22 @@ function encode(bytes: Uint8Array): string {
     return btoa(binary);
 }
 
+interface ChatProps {
+  currentUser: string;
+}
 
-const Chat: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+const Chat: React.FC<ChatProps> = ({ currentUser }) => {
+  const CHAT_HISTORY_KEY = `chatgps-chat-history-${currentUser}`;
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+        const savedHistory = localStorage.getItem(CHAT_HISTORY_KEY);
+        return savedHistory ? JSON.parse(savedHistory) : [];
+    } catch (error) {
+        console.error("Failed to load chat history from localStorage", error);
+        return [];
+    }
+  });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -35,6 +49,15 @@ const Chat: React.FC = () => {
   };
 
   useEffect(scrollToBottom, [messages]);
+  
+  useEffect(() => {
+    try {
+        localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages));
+    } catch (error) {
+        console.error("Failed to save chat history to localStorage", error);
+    }
+  }, [messages, CHAT_HISTORY_KEY]);
+
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,6 +182,12 @@ const Chat: React.FC = () => {
     }
   };
 
+  const handleClearHistory = () => {
+    if (window.confirm('Are you sure you want to clear the chat history? This action cannot be undone.')) {
+        setMessages([]);
+    }
+  };
+
   useEffect(() => {
     return () => {
         stopRecording();
@@ -167,10 +196,6 @@ const Chat: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-800">
-      <header className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-xl font-semibold">Student Chat</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Ask about school services or get help with homework.</p>
-      </header>
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.map((msg, index) => (
           <div
@@ -207,10 +232,21 @@ const Chat: React.FC = () => {
       </div>
       <div className="p-4 bg-white dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
         <div className="mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
-            <h4 className="text-sm font-semibold mb-3 text-gray-800 dark:text-gray-200 flex items-center">
-                <span className="material-symbols-outlined text-lg mr-2 text-indigo-500">school</span>
-                Homework Helper
-            </h4>
+            <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                    <span className="material-symbols-outlined text-lg mr-2 text-indigo-500">school</span>
+                    Homework Helper
+                </h4>
+                {messages.length > 0 && (
+                    <button
+                        onClick={handleClearHistory}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                        <TrashIcon className="w-4 h-4" />
+                        Clear History
+                    </button>
+                )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="subject" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Subject</label>

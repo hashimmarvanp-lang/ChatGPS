@@ -1,5 +1,5 @@
 {
-  "name": "ChatGPS ",
+  "name": "ChatGPS",
   "description": "An AI-powered assistant for students and school services, offering homework help, media analysis, real-time voice chat, and audio transcription.",
   "requestFramePermissions": [
     "microphone"

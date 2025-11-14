@@ -40,9 +40,14 @@ const Transcriber: React.FC = () => {
         audioContextRef.current.close();
     }
     setIsRecording(false);
-    setFinalizedTranscription(prev => prev + transcription);
-    setTranscription('');
-  }, [transcription]);
+    // fix: Use functional state update to get the latest transcription and avoid stale closure.
+    setTranscription(currentTranscription => {
+      if (currentTranscription) {
+        setFinalizedTranscription(prev => prev + currentTranscription);
+      }
+      return '';
+    });
+  }, []);
 
   const startTranscription = async () => {
     if (isRecording) return;
@@ -86,8 +91,13 @@ const Transcriber: React.FC = () => {
               setTranscription(prev => prev + message.serverContent.inputTranscription.text);
             }
             if (message.serverContent?.turnComplete) {
-              setFinalizedTranscription(prev => prev + transcription);
-              setTranscription('');
+              // fix: Use functional state update to get the latest transcription and avoid stale closure.
+              setTranscription(currentTranscription => {
+                if (currentTranscription) {
+                  setFinalizedTranscription(prev => prev + currentTranscription);
+                }
+                return '';
+              });
             }
           },
           onerror: (e: ErrorEvent) => {
@@ -114,10 +124,6 @@ const Transcriber: React.FC = () => {
   
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-800">
-        <header className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold">Audio Transcriber</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Record your voice and get a live transcription.</p>
-        </header>
         <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
             <button
                 onClick={isRecording ? stopTranscription : startTranscription}
